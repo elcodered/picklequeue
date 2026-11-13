@@ -6,7 +6,51 @@ import './styles.css';
 const STORAGE = 'picklequeue-v1';
 const initials = name => name.split(' ').filter(Boolean).map(w=>w[0]).slice(0,2).join('').toUpperCase();
 const duration = (start, now=Date.now()) => {const sec=Math.max(0,Math.floor((now-start)/1000));return `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;};
+function Landing({onOpenApp}){
+ return <div className="landing-page">
+  <header className="landing-header">
+   <a className="landing-brand" href="#" onClick={e=>e.preventDefault()} aria-label="PickleQueue home"><span className="landing-brand-mark">p<span>•</span></span><span>picklequeue<span className="landing-brand-period">.</span></span></a>
+   <nav className="landing-nav" aria-label="Main navigation"><a href="#features">Features</a><a href="#how-it-works">How it works</a></nav>
+   <div className="landing-header-actions"><a className="landing-login" href="/login.html">Login</a><button className="landing-header-cta" onClick={onOpenApp}>Open the app <ArrowUpRight size={16}/></button></div>
+  </header>
+  <main className="landing-main">
+   <section className="landing-hero">
+    <div className="landing-copy">
+     <span className="landing-kicker"><span/> MADE FOR OPEN PLAY</span>
+     <h1>More playing.<br/><span>Less waiting.</span></h1>
+     <p>Keep your pickleball games moving. PickleQueue makes player rotations and court time easy, so everyone gets back to the fun.</p>
+     <div className="landing-actions"><button className="landing-primary" onClick={onOpenApp}>Get your games going <ArrowRight size={17}/></button><a className="landing-secondary" href="#how-it-works">See how it works <span>↓</span></a></div>
+     <div className="landing-proof"><span className="proof-avatars"><i>J</i><i>M</i><i>A</i><i>+</i></span><span>Made for your local courts<br/><strong>and the people who play them</strong></span></div>
+    </div>
+    <div className="landing-preview-wrap" aria-label="PickleQueue court and player queue preview">
+     <div className="landing-sunburst">✳</div>
+     <div className="landing-court-art"><span className="court-art-net"/></div>
+     <div className="landing-queue-card">
+      <div className="preview-heading"><div><span className="preview-live"><i/> OPEN PLAY</span><strong>Up next</strong></div><span className="preview-count">4 PLAYERS</span></div>
+      <div className="preview-player"><span className="preview-avatar avatar-one">JL</span><span><strong>Jamie Lee</strong><small>Intermediate</small></span><span className="preview-position">01</span></div>
+      <div className="preview-player"><span className="preview-avatar avatar-two">MR</span><span><strong>Max Rivera</strong><small>Beginner</small></span><span className="preview-position">02</span></div>
+      <div className="preview-player"><span className="preview-avatar avatar-three">SK</span><span><strong>Sam Kim</strong><small>Intermediate</small></span><span className="preview-position">03</span></div>
+      <div className="preview-player"><span className="preview-avatar avatar-four">AT</span><span><strong>Alex Taylor</strong><small>Advanced</small></span><span className="preview-position">04</span></div>
+      <div className="preview-card-footer"><span><span/> Court 1 is ready</span><span className="preview-arrow"><ArrowRight size={15}/></span></div>
+     </div>
+     <div className="landing-float-note"><span className="float-check"><Check size={15}/></span><span><strong>Fair turns, every time</strong><small>Good games start here</small></span></div>
+    </div>
+   </section>
+   <section className="landing-features" id="features">
+    <div className="landing-section-intro"><span className="landing-kicker">THE FUN PART, MADE SIMPLE</span><h2>Everything your open play needs.</h2><p>Less organizing between games. More time on the court.</p></div>
+    <div className="landing-feature-grid">
+     <article className="landing-feature"><span className="feature-icon"><Users size={20}/></span><h3>A queue that just works</h3><p>Check players in and keep everyone in the loop about who’s up next.</p></article>
+     <article className="landing-feature"><span className="feature-icon"><Grid2X2 size={20}/></span><h3>Every court, at a glance</h3><p>See what’s available and what’s in play without juggling a clipboard.</p></article>
+     <article className="landing-feature"><span className="feature-icon"><RotateCcw size={20}/></span><h3>Good games on repeat</h3><p>Start a match, record the result, and send players back into rotation.</p></article>
+    </div>
+   </section>
+   <section className="landing-bottom-cta" id="how-it-works"><div><span className="landing-kicker">READY WHEN YOU ARE</span><h2>Bring your people.<br/>We’ll keep the games going.</h2></div><button className="landing-primary" onClick={onOpenApp}>Explore PickleQueue <ArrowRight size={17}/></button></section>
+  </main>
+  <footer className="landing-footer"><a className="landing-footer-brand" href="#" onClick={e=>e.preventDefault()}>picklequeue<span>.</span></a><span>Made for the love of the game.</span><span>© {new Date().getFullYear()} PickleQueue</span></footer>
+ </div>;
+}
 function App(){
+ const [showLanding,setShowLanding]=useState(true);
  const [state,setState]=useState(()=>{try{const s=JSON.parse(localStorage.getItem(STORAGE));if(s?.players&&s?.courts&&s?.queue&&s?.history)return s;}catch{}return initialState();});
  const [tab,setTab]=useState('Dashboard'),[query,setQuery]=useState(''),[modal,setModal]=useState(null),[toast,setToast]=useState(''),[now,setNow]=useState(Date.now()),[mobile,setMobile]=useState(false),[formError,setFormError]=useState('');
  useEffect(()=>{try{localStorage.setItem(STORAGE,JSON.stringify(state));}catch{setToast('Browser storage is unavailable. Keep this tab open to retain changes.');}},[state]);
@@ -38,6 +82,7 @@ function App(){
  function submitPlayer(e){e.preventDefault();const f=new FormData(e.currentTarget),name=f.get('name').trim(),skill=f.get('skill');if(!name){setFormError('Please enter a player name.');return;}if(state.players.some(p=>p.id!==modal.player?.id&&p.name.toLowerCase()===name.toLowerCase())){setFormError('A player with this name already exists.');return;}if(modal.player){setState(s=>({...s,players:s.players.map(p=>p.id===modal.player.id?{...p,name,skill}:p)}));notify('Player updated');}else{const id=uid();setState(s=>({...s,players:[...s.players,{id,name,skill,games:0}],queue:[...s.queue,{playerId:id,joinedAt:Date.now()}]}));notify(`${name} checked in`);}setModal(null);}
  function deletePlayer(id){if(statusOf(state,id)==='Playing'){notify('Finish the player’s match before removing them.');return;}setState(s=>({...s,lockedPairs:(s.lockedPairs||[]).filter(pair=>!pair.includes(id)),players:s.players.filter(p=>p.id!==id),queue:s.queue.filter(q=>q.playerId!==id)}));setModal(null);notify('Player removed');}
  const NavIcon={Dashboard:LayoutDashboard,Players:Users,Courts:Grid2X2,Leaderboard:Trophy,'Match history':History};
+ if(showLanding)return <Landing onOpenApp={()=>{setShowLanding(false);window.scrollTo(0,0)}}/>;
  return <div className="app-shell">
   <aside className={`sidebar ${mobile?'open':''}`}><a className="brand" href="#" onClick={e=>{e.preventDefault();setTab('Dashboard')}}><span className="brand-icon">p<span>•</span></span><span>picklequeue<span className="brand-period">.</span></span></a><div className="club"><div className="club-mark">PC</div><div><strong>The Pickle Club</strong><small>Club workspace</small></div><span className="club-dots">⌘</span></div><div className="nav-label">WORKSPACE</div><nav>{Object.entries(NavIcon).map(([name,Icon])=><button key={name} className={tab===name?'active':''} onClick={()=>{setTab(name);setQuery('');setMobile(false)}}><Icon size={19}/><span>{name}</span>{name==='Dashboard'&&<span className="nav-live"/>}{name==='Players'&&<span className="nav-count">{state.players.length}</span>}</button>)}</nav><div className="sidebar-bottom"><div className="rotation-tip"><span className="tip-symbol">✳</span><strong>More play. Less waiting.</strong><p>Good games start with a great rotation. We’ve got you covered.</p><span>Made for the love of the game <ArrowUpRight size={13}/></span></div><button className="help-button" onClick={()=>openModal({type:'help'})}><CircleHelp size={18}/> How it works <ArrowUpRight size={15}/></button><div className="profile"><div className="avatar admin">AD</div><div><strong>Club admin</strong><small>Session manager</small></div><span className="online-dot"/></div></div></aside>
   <div className="main-shell"><header className="topbar"><div className="breadcrumb"><button className="mobile-toggle icon-button" aria-label="Open navigation" onClick={()=>setMobile(!mobile)}><Menu size={20}/></button>Workspace <ChevronRight size={14}/><strong>{tab}</strong></div><div className="topbar-right"><span className="local-badge"><span/> Local demo</span><span className="topbar-divider"/><div className="avatar small admin">AD</div></div></header>
