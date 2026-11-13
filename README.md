@@ -15,7 +15,9 @@ Open the local URL printed by Vite. Run `npm run build` for production output, `
 
 - Dashboard with live waiting, playing, completed-match, and court counts.
 - Player registration, editing, deletion, check-in, and queue checkout.
-- FCFS: the first four waiting players form Team A and Team B.
+- Queue priority selects the next four eligible players; returning players shuffle at the queue tail after each match.
+- Lock two waiting players as persistent partners using the lock icon. They take the later queue position, stay on one team, shuffle as a unit, and join or leave the queue together. Unlock from the queue or player roster.
+- Locked pairs stay intact when selecting matches, including across multiple courts. If needed, a player waits for the next available group of four.
 - Multiple courts, availability controls, and match timers.
 - Match completion requires choosing the winning doubles team and returns all four players to the queue tail.
 - Match history with winning teams and per-player games played.

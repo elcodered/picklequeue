@@ -1,4 +1,47 @@
 export const uid = () => globalThis.crypto.randomUUID();
+export const partnerOf = (state, id) => (state.lockedPairs || []).find(pair => pair.includes(id))?.find(playerId => playerId !== id);
+export function unlockPair(state, id) {
+  return {...state, lockedPairs:(state.lockedPairs || []).filter(pair => !pair.includes(id))};
+}
+export function lockPair(state, first, second) {
+  if (first === second || partnerOf(state, first) || partnerOf(state, second) ||
+      ![first, second].every(id => state.players.some(p => p.id === id) && statusOf(state, id) === 'In queue')) return state;
+  // The pair takes the later queue position so locking cannot jump the queue.
+  const later = Math.max(...[first, second].map(id => state.queue.findIndex(q => q.playerId === id)));
+  const pair = [first, second].map(id => state.queue.find(q => q.playerId === id));
+  const queue = state.queue.filter(q => ![first, second].includes(q.playerId));
+  queue.splice(later - 1, 0, ...pair);
+  return {...state, queue, lockedPairs:[...(state.lockedPairs || []), [first, second]]};
+}
+function queueGroups(state, entries) {
+  const seen = new Set();
+  const groups = [];
+  for (const entry of entries) {
+    if (seen.has(entry.playerId)) continue;
+    const partner = partnerOf(state, entry.playerId);
+    const other = partner && entries.find(q => q.playerId === partner);
+    if (partner && !other) continue;
+    const group = other ? [entry, other] : [entry];
+    group.forEach(q => seen.add(q.playerId));
+    groups.push(group);
+  }
+  return groups;
+}
+export function nextMatchPlayerIds(state) {
+  const groups = queueGroups(state, state.queue);
+  function select(index, remaining) {
+    if (!remaining) return [];
+    for (let i = index; i < groups.length; i++) {
+      if (groups[i].length > remaining) continue;
+      const rest = select(i + 1, remaining - groups[i].length);
+      if (rest) return [groups[i], ...rest];
+    }
+    return null;
+  }
+  const selected = select(0, 4) || [];
+  // Locked groups occupy a complete team; singles fill the other team.
+  return [...selected.filter(g => g.length === 2), ...selected.filter(g => g.length === 1)].flat().map(q => q.playerId);
+}
 export function initialState() {
   const names = ['Juan Dela Cruz', 'Maria Santos', 'Pedro Reyes', 'Ana Garcia', 'Mark Mendoza', 'John Rivera', 'Carlo Ramos', 'Jessa Lim'];
   const players = names.map((name, i) => ({id: `player-${i}`, name, skill: ['Intermediate', 'Beginner', 'Advanced'][i % 3], games: 0}));
@@ -7,14 +50,21 @@ export function initialState() {
 export function startMatch(state, courtId) {
   const court = state.courts.find(c => c.id === courtId);
   if (!court || !court.enabled || court.match || state.queue.length < 4) return state;
-  const match = {id:uid(), playerIds:state.queue.slice(0,4).map(q=>q.playerId), startedAt:Date.now()};
-  return {...state, queue:state.queue.slice(4), courts:state.courts.map(c=>c.id===courtId ? {...c,match} : c)};
+  const playerIds = nextMatchPlayerIds(state);
+  if (playerIds.length !== 4) return state;
+  const match = {id:uid(), playerIds, startedAt:Date.now()};
+  return {...state, queue:state.queue.filter(q => !playerIds.includes(q.playerId)), courts:state.courts.map(c=>c.id===courtId ? {...c,match} : c)};
 }
-export function finishMatch(state, courtId, winningTeam, matchId) {
+export function finishMatch(state, courtId, winningTeam, matchId, random = Math.random) {
   const court = state.courts.find(c => c.id === courtId);
   if (!court?.match || !['A', 'B'].includes(winningTeam) || (matchId && court.match.id !== matchId)) return state;
   const match = {...court.match, winningTeam, courtName:court.name, endedAt:Date.now()};
-  return {...state, players:state.players.map(p=>match.playerIds.includes(p.id)?{...p,games:p.games+1}:p), queue:[...state.queue,...match.playerIds.map(playerId=>({playerId,joinedAt:Date.now()}))], courts:state.courts.map(c=>c.id===courtId?{...c,match:null}:c), history:[match,...state.history]};
+  const groups = queueGroups(state, match.playerIds.map(playerId=>({playerId,joinedAt:match.endedAt})));
+  for (let i = groups.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [groups[i], groups[j]] = [groups[j], groups[i]];
+  }
+  return {...state, players:state.players.map(p=>match.playerIds.includes(p.id)?{...p,games:p.games+1}:p), queue:[...state.queue,...groups.flat()], courts:state.courts.map(c=>c.id===courtId?{...c,match:null}:c), history:[match,...state.history]};
 }
 export function playerStandings(state) {
   const records = new Map(state.players.map(player => [player.id, {...player, wins:0, losses:0}]));

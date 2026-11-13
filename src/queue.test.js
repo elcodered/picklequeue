@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {initialState,startMatch,finishMatch,playerStandings,statusOf} from './queue.js';
+import {initialState,startMatch,finishMatch,playerStandings,statusOf,lockPair,unlockPair,partnerOf,nextMatchPlayerIds} from './queue.js';
 test('FCFS selects first four, assigns unique players, and rotates to the tail',()=>{
  const initial=initialState();const started=startMatch(initial,'court-1');
  assert.deepEqual(started.courts[0].match.playerIds,['player-0','player-1','player-2','player-3']);
  assert.deepEqual(started.queue.map(q=>q.playerId),['player-4','player-5','player-6','player-7']);
  assert.equal(statusOf(started,'player-0'),'Playing');
- const finished=finishMatch(started,'court-1','A');
+ const finished=finishMatch(started,'court-1','A',undefined,()=>0.999);
  assert.equal(finished.courts[0].match,null);assert.equal(finished.history.length,1);
  assert.deepEqual(finished.queue.map(q=>q.playerId),['player-4','player-5','player-6','player-7','player-0','player-1','player-2','player-3']);
  assert.equal(finished.players[0].games,1);assert.equal(finished.players[4].games,0);
@@ -62,4 +62,54 @@ test('rankings sort by wins then win rate, share ties and ignore historical matc
  assert.ok(legacy.every(p=>p.rank===null&&p.ratedGames===0));
  const deleted=playerStandings({...state,players:state.players.filter(p=>p.id!=='player-0')});
  assert.equal(deleted.find(p=>p.id==='player-1').wins,2);
+});
+
+test('completed players shuffle at the tail without moving waiting players or altering the result',()=>{
+ const started=startMatch(initialState(),'court-1');
+ const finished=finishMatch(started,'court-1','A',undefined,()=>0);
+ assert.deepEqual(finished.queue.slice(0,4),started.queue);
+ assert.deepEqual(finished.queue.slice(4).map(q=>q.playerId),['player-1','player-2','player-3','player-0']);
+ assert.deepEqual(finished.history[0].playerIds,started.courts[0].match.playerIds);
+ assert.equal(playerStandings(finished).find(p=>p.id==='player-0').wins,1);
+ assert.deepEqual(started.courts[0].match.playerIds,['player-0','player-1','player-2','player-3']);
+});
+test('locked partners take the later position, stay on one team, shuffle as a unit and persist',()=>{
+ const state=initialState();
+ const locked=lockPair(state,'player-0','player-3');
+ assert.deepEqual(locked.queue.slice(0,4).map(q=>q.playerId),['player-1','player-2','player-0','player-3']);
+ assert.equal(partnerOf(JSON.parse(JSON.stringify(locked)),'player-0'),'player-3');
+ const started=startMatch(locked,'court-1');
+ assert.deepEqual(started.courts[0].match.playerIds,['player-0','player-3','player-1','player-2']);
+ const finished=finishMatch(started,'court-1','B',undefined,()=>0);
+ const returning=finished.queue.slice(4).map(q=>q.playerId);
+ assert.equal(returning.indexOf('player-3'),returning.indexOf('player-0')+1);
+ assert.equal(partnerOf(finished,'player-3'),'player-0');
+ const both=startMatch(startMatch(finished,'court-1'),'court-2');
+ assert.deepEqual(both.courts[1].match.playerIds.slice(0,2),['player-0','player-3']);
+ assert.equal(new Set(both.courts.flatMap(c=>c.match.playerIds)).size,8);
+ assert.equal(partnerOf(unlockPair(finished,'player-3'),'player-0'),undefined);
+ assert.equal((state.lockedPairs||[]).length,0);
+});
+test('pair selection handles a single followed by two pairs and never splits partners',()=>{
+ let state=initialState();
+ state={...state,queue:state.queue.slice(0,5)};
+ state=lockPair(lockPair(state,'player-1','player-2'),'player-3','player-4');
+ assert.deepEqual(nextMatchPlayerIds(state),['player-1','player-2','player-3','player-4']);
+ const started=startMatch(state,'court-1');
+ assert.deepEqual(started.queue.map(q=>q.playerId),['player-0']);
+ const missing={...state,queue:state.queue.filter(q=>q.playerId!=='player-2')};
+ assert.deepEqual(nextMatchPlayerIds(missing),[]);
+ assert.equal(startMatch(missing,'court-1'),missing);
+});
+test('invalid locks cannot change partners or active teams, and legacy states need no migration',()=>{
+ const state=initialState();
+ for(const pair of [['player-0','player-0'],['player-0','unknown']]) assert.equal(lockPair(state,...pair),state);
+ const locked=lockPair(state,'player-0','player-1');
+ assert.equal(lockPair(locked,'player-0','player-2'),locked);
+ assert.equal(lockPair(locked,'player-2','player-1'),locked);
+ const started=startMatch(state,'court-1');
+ assert.equal(lockPair(started,'player-0','player-4'),started);
+ const checkedOut={...state,queue:state.queue.slice(1)};
+ assert.equal(lockPair(checkedOut,'player-0','player-1'),checkedOut);
+ assert.equal(nextMatchPlayerIds(state).length,4);
 });
