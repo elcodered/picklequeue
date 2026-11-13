@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {initialState,startMatch,finishMatch,playerStandings,statusOf,lockPair,unlockPair,partnerOf,nextMatchPlayerIds} from './queue.js';
-test('FCFS selects first four, assigns unique players, and rotates to the tail',()=>{
+import {initialState,startMatch as randomStartMatch,finishMatch,playerStandings,statusOf,lockPair,unlockPair,partnerOf,nextMatchPlayerIds} from './queue.js';
+const startMatch = (state, courtId) => randomStartMatch(state, courtId, () => 0.999);
+test('a fixed draw assigns unique players and rotates them to the tail',()=>{
  const initial=initialState();const started=startMatch(initial,'court-1');
  assert.deepEqual(started.courts[0].match.playerIds,['player-0','player-1','player-2','player-3']);
  assert.deepEqual(started.queue.map(q=>q.playerId),['player-4','player-5','player-6','player-7']);
@@ -112,4 +113,35 @@ test('invalid locks cannot change partners or active teams, and legacy states ne
  const checkedOut={...state,queue:state.queue.slice(1)};
  assert.equal(lockPair(checkedOut,'player-0','player-1'),checkedOut);
  assert.equal(nextMatchPlayerIds(state).length,4);
+});
+
+test('random draws select beyond the first four even on the initial match',()=>{
+ const state=initialState();
+ const values=[0.25,0.6,0.1,0.8,0.4,0.2,0.7];let index=0;
+ const started=randomStartMatch(state,'court-1',()=>values[index++ % values.length]);
+ const ids=started.courts[0].match.playerIds;
+ assert.equal(new Set(ids).size,4);
+ assert.ok(ids.some(id=>Number(id.split('-')[1])>=4));
+ assert.ok(started.queue.some(q=>Number(q.playerId.split('-')[1])<4));
+ assert.equal(state.queue.length,8);
+});
+test('the next match changes partners even when the random draw repeats the previous order',()=>{
+ const state={...initialState(),queue:initialState().queue.slice(0,4)};
+ const first=startMatch(state,'court-1');
+ const finished=finishMatch(first,'court-1','A',undefined,()=>0.999);
+ const next=startMatch(finished,'court-1');
+ const before=first.courts[0].match.playerIds,after=next.courts[0].match.playerIds;
+ for(const id of before) assert.notEqual(after[after.indexOf(id)^1],before[before.indexOf(id)^1]);
+});
+test('full pool randomization preserves locked teams across multiple courts',()=>{
+ let state=lockPair(initialState(),'player-0','player-7');
+ state=lockPair(state,'player-2','player-5');
+ const first=randomStartMatch(state,'court-1',()=>0.3);
+ const both=randomStartMatch(first,'court-2',()=>0.6);
+ const ids=both.courts.flatMap(c=>c.match.playerIds);
+ assert.equal(new Set(ids).size,8);
+ for(const court of both.courts){
+  const order=court.match.playerIds;
+  for(const id of order) if(partnerOf(state,id)) assert.equal(order[order.indexOf(id)^1],partnerOf(state,id));
+ }
 });

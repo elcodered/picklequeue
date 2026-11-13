@@ -47,11 +47,36 @@ export function initialState() {
   const players = names.map((name, i) => ({id: `player-${i}`, name, skill: ['Intermediate', 'Beginner', 'Advanced'][i % 3], games: 0}));
   return {players, queue: players.map(p => ({playerId: p.id, joinedAt: Date.now()})), courts: [{id:'court-1', name:'Court 1', enabled:true, match:null}, {id:'court-2', name:'Court 2', enabled:true, match:null}], history:[]};
 }
-export function startMatch(state, courtId) {
+function shuffled(items, random) {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+function assignTeams(state, ids, random) {
+  const [a,b,c,d] = ids;
+  const choices = shuffled([[a,b,c,d], [a,c,b,d], [a,d,b,c]], random).filter(order =>
+    order.every((id, index) => !partnerOf(state,id) || partnerOf(state,id) === order[index ^ 1]));
+  const lastPartners = new Map();
+  for (const match of state.history) {
+    match.playerIds.forEach((id, index) => {
+      if (!lastPartners.has(id)) lastPartners.set(id, match.playerIds[index ^ 1]);
+    });
+  }
+  const repeats = order => order.reduce((count, id, index) => count + Number(!partnerOf(state,id) && lastPartners.get(id) === order[index ^ 1]), 0);
+  choices.sort((left, right) => repeats(left) - repeats(right));
+  return choices[0];
+}
+export function startMatch(state, courtId, random = Math.random) {
   const court = state.courts.find(c => c.id === courtId);
   if (!court || !court.enabled || court.match || state.queue.length < 4) return state;
-  const playerIds = nextMatchPlayerIds(state);
-  if (playerIds.length !== 4) return state;
+  // Draw from the entire waiting pool, rather than retaining arrival cohorts.
+  const pool = shuffled(queueGroups(state, state.queue), random).flat();
+  const selected = nextMatchPlayerIds({...state, queue:pool});
+  if (selected.length !== 4) return state;
+  const playerIds = assignTeams(state, selected, random);
   const match = {id:uid(), playerIds, startedAt:Date.now()};
   return {...state, queue:state.queue.filter(q => !playerIds.includes(q.playerId)), courts:state.courts.map(c=>c.id===courtId ? {...c,match} : c)};
 }
