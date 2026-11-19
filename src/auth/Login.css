@@ -55,3 +55,41 @@
 @media(max-width:760px) {.pq-auth-page{min-height:100svh}.pq-auth-landscape{background-position:46% center}.pq-auth-content{display:flex;flex-direction:column;gap:42px;justify-content:center;padding:125px 25px 60px}.pq-auth-intro{margin:0;text-align:center}.pq-auth-intro h1{font-size:clamp(38px,8vw,58px);letter-spacing:-2px}.pq-auth-eyebrow{justify-content:center;font-size:10px;letter-spacing:2px;margin-bottom:13px}.pq-auth-intro p{margin:13px 0 0;font-size:15px}.pq-auth-card-frame{max-width:460px;align-self:center}.pq-auth-ball{left:78%;top:20%;transform:scale(.7);opacity:.7}.pq-auth-brand{top:23px;left:24px;font-size:24px}.pq-auth-brand-icon{width:44px;height:44px;font-size:37px;border-radius:12px}.pq-auth-star{font-size:52px;top:-48px}}
 @media(max-width:440px) {.pq-auth-content{padding-inline:19px;gap:34px}.pq-auth-card{padding:28px 23px;border-radius:29px}.pq-auth-card-back{inset:-15px -5px 20px -9px;border-radius:30px}.pq-auth-card-header{margin-bottom:24px}.pq-auth-card-header h2{font-size:31px}.pq-auth-card-header p{font-size:15px}.pq-auth-field{margin-bottom:18px}.pq-auth-control{height:50px;border-radius:15px}.pq-auth-options{font-size:12px}.pq-auth-submit{height:52px;font-size:16px}.pq-auth-signup{font-size:12px}.pq-auth-divider{margin:22px 0}.pq-auth-intro h1{font-size:38px}}
 @media(prefers-reduced-motion:reduce){.pq-auth-ball,.pq-auth-ball-body,.pq-auth-sunlight{animation:none}}
+
+/* Layout refinement: balanced desktop composition matching reference */
+@media (min-width: 761px) {
+ .pq-auth-content { width:100%; max-width:1600px; min-height:100svh; padding:110px clamp(38px,5.1vw,82px) 45px; grid-template-columns:minmax(0,1fr) minmax(350px,440px); column-gap:clamp(28px,4vw,68px); align-items:center; }
+ .pq-auth-intro { margin:-45px 0 0 clamp(0px,7vw,125px); max-width:610px; position:relative; z-index:1; }
+ .pq-auth-intro h1 { font-size:clamp(43px,4.7vw,72px); letter-spacing:-3px; }
+ .pq-auth-intro p { margin:18px 0 0 38px; font-size:clamp(15px,1.3vw,19px); }
+ .pq-auth-card-frame { width:100%; max-width:440px; align-self:center; }
+ .pq-auth-card { padding:35px 37px 34px; border-radius:34px; }
+ .pq-auth-card-header { margin-bottom:25px; }
+ .pq-auth-card-header h2 { font-size:36px; }
+ .pq-auth-card-header p { font-size:17px; }
+ .pq-auth-field { margin-bottom:19px; }
+ .pq-auth-field label { font-size:13px; margin-bottom:8px; }
+ .pq-auth-control { height:51px; border-radius:17px; }
+ .pq-auth-options { margin:2px 0 23px; font-size:12px; }
+ .pq-auth-submit { height:51px; font-size:16px; border-radius:17px; }
+ .pq-auth-divider { margin:25px 0 20px; }
+ .pq-auth-signup { font-size:12px; }
+ .pq-auth-ball { top:23%; left:49%; }
+}
+@media (min-width:761px) and (max-height:760px) {
+ .pq-auth-content { padding-top:92px; padding-bottom:24px; }
+ .pq-auth-card { padding:25px 32px; }
+ .pq-auth-card-header { margin-bottom:18px; }
+ .pq-auth-card-header h2 { font-size:32px; }
+ .pq-auth-field { margin-bottom:14px; }
+ .pq-auth-control { height:45px; }
+ .pq-auth-options { margin-bottom:17px; }
+ .pq-auth-submit { height:46px; }
+ .pq-auth-divider { margin:18px 0 14px; }
+}
+@media (min-width:761px) and (max-width:1100px) {
+ .pq-auth-content { grid-template-columns:minmax(0,1fr) minmax(330px,410px); padding-inline:30px; }
+ .pq-auth-intro { margin-left:0; }
+ .pq-auth-intro h1 { font-size:clamp(37px,4.5vw,52px); letter-spacing:-2px; }
+ .pq-auth-card { padding:30px; }
+}
