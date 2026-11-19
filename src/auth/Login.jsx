@@ -1,88 +1,78 @@
+import React, { useState } from 'react';
+import { Mail, LockKeyhole, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import './Login.css';
 
-import React from "react";
-import "./Login.css";
+export default function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [visible, setVisible] = useState(false);
+  const [remember, setRemember] = useState(false);
+  const [message, setMessage] = useState('');
 
-function Login() {
-    return (
-        <div className="login-page">
+  function submit(event) {
+    event.preventDefault();
+    setMessage('This is a design preview. Connect your authentication API to enable sign in.');
+  }
 
-            <div className="login-container">
+  return (
+    <main className="pq-auth-page">
+      <div className="pq-auth-landscape" aria-hidden="true" />
+      <div className="pq-auth-sunlight" aria-hidden="true" />
+      <div className="pq-auth-ball" aria-hidden="true">
+        <span className="pq-auth-ball-trail" />
+        <span className="pq-auth-ball-body"><i/><i/><i/><i/><i/><i/></span>
+      </div>
 
-                {/* Logo */}
-                <div className="login-logo">
-                    picklequeue<span>.</span>
+      <a className="pq-auth-brand" href="/" aria-label="Picklequeue home">
+        <span className="pq-auth-brand-icon">p<span /></span>
+        <span>picklequeue<span className="pq-auth-brand-dot">.</span></span>
+      </a>
+
+      <div className="pq-auth-content">
+        <section className="pq-auth-intro" aria-label="Welcome to Picklequeue">
+          <div className="pq-auth-eyebrow"><span /> MADE FOR OPEN PLAY</div>
+          <h1>More playing.<br/><em>Less waiting.</em></h1>
+          <p>Keep your pickleball games moving.</p>
+        </section>
+
+        <div className="pq-auth-card-frame">
+          <div className="pq-auth-card-back" aria-hidden="true" />
+          <div className="pq-auth-star" aria-hidden="true">✳</div>
+          <section className="pq-auth-card" aria-labelledby="pq-auth-title">
+            <header className="pq-auth-card-header">
+              <h2 id="pq-auth-title">Sign in</h2>
+              <p>Good to see you again.</p>
+            </header>
+            <form onSubmit={submit}>
+              <div className="pq-auth-field">
+                <label htmlFor="pq-auth-email">Email address</label>
+                <div className="pq-auth-control">
+                  <Mail size={20} aria-hidden="true" />
+                  <input id="pq-auth-email" type="email" placeholder="you@example.com" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required />
                 </div>
-
-                {/* Header */}
-                <div className="login-header">
-                    <h1>Welcome back</h1>
-                    <p>Sign in to your account to continue.</p>
+              </div>
+              <div className="pq-auth-field">
+                <label htmlFor="pq-auth-password">Password</label>
+                <div className="pq-auth-control">
+                  <LockKeyhole size={20} aria-hidden="true" />
+                  <input id="pq-auth-password" type={visible ? 'text' : 'password'} placeholder="Enter your password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} required />
+                  <button className="pq-auth-visibility" type="button" onClick={() => setVisible(v => !v)} aria-label={visible ? 'Hide password' : 'Show password'} aria-pressed={visible}>
+                    {visible ? <EyeOff size={21} /> : <Eye size={21} />}
+                  </button>
                 </div>
-
-                {/* Login Form */}
-                <form onSubmit={(e) => e.preventDefault()}>
-
-                    {/* Email */}
-                    <div className="login-form-group">
-                        <label htmlFor="email">
-                            Email address
-                        </label>
-
-                        <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            placeholder="Enter your email address"
-                            required
-                        />
-                    </div>
-
-                    {/* Password */}
-                    <div className="login-form-group">
-                        <label htmlFor="password">
-                            Password
-                        </label>
-
-                        <input
-                            type="password"
-                            id="password"
-                            name="password"
-                            placeholder="Enter your password"
-                            required
-                        />
-                    </div>
-
-                    {/* Remember Me and Forgot Password */}
-                    <div className="login-options">
-
-                        <label className="remember-option">
-                            <input type="checkbox" name="remember" />
-                            <span>Remember me</span>
-                        </label>
-
-                        <a href="#forgot-password">
-                            Forgot password?
-                        </a>
-
-                    </div>
-
-                    {/* Login Button */}
-                    <button type="submit" className="login-button">
-                        Sign in
-                    </button>
-
-                    {/* Register Link */}
-                    <div className="login-signup">
-                        Don't have an account?
-                        <a href="#register"> Sign up</a>
-                    </div>
-
-                </form>
-
-            </div>
-
+              </div>
+              <div className="pq-auth-options">
+                <label className="pq-auth-remember"><input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} /> Remember me</label>
+                <a href="#forgot-password" onClick={e => { e.preventDefault(); setMessage('Password recovery will be available when authentication is connected.'); }}>Forgot password?</a>
+              </div>
+              <button className="pq-auth-submit" type="submit">Sign in <ArrowRight size={21} aria-hidden="true" /></button>
+              {message && <p className="pq-auth-message" role="status">{message}</p>}
+            </form>
+            <div className="pq-auth-divider"><span>or</span></div>
+            <p className="pq-auth-signup">New to Picklequeue? <a href="#register" onClick={e => { e.preventDefault(); setMessage('Account registration will be available when authentication is connected.'); }}>Create an account</a></p>
+          </section>
         </div>
-    );
+      </div>
+    </main>
+  );
 }
-
-export default Login;
