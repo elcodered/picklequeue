@@ -112,6 +112,21 @@
     font-weight: 600;
 }
 
+.login-error {
+    margin: -10px 0 16px;
+    color: #aa5948;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.login-demo-note {
+    margin-top: 20px;
+    color: #87918A;
+    font-size: 11px;
+    line-height: 1.6;
+    text-align: center;
+}
+
 /* Login Button */
 .login-button {
     width: 100%;
