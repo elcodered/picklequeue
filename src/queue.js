@@ -78,7 +78,11 @@ export function startMatch(state, courtId, random = Math.random) {
   if (selected.length !== 4) return state;
   const playerIds = assignTeams(state, selected, random);
   const match = {id:uid(), playerIds, startedAt:Date.now()};
-  return {...state, queue:state.queue.filter(q => !playerIds.includes(q.playerId)), courts:state.courts.map(c=>c.id===courtId ? {...c,match} : c)};
+  const lockedPairs = [...(state.lockedPairs || [])];
+  for (const [first, second] of [[playerIds[0], playerIds[1]], [playerIds[2], playerIds[3]]]) {
+    if (!partnerOf(state, first)) lockedPairs.push([first, second]);
+  }
+  return {...state, lockedPairs, queue:state.queue.filter(q => !playerIds.includes(q.playerId)), courts:state.courts.map(c=>c.id===courtId ? {...c,match} : c)};
 }
 export function finishMatch(state, courtId, winningTeam, matchId, random = Math.random) {
   const court = state.courts.find(c => c.id === courtId);
