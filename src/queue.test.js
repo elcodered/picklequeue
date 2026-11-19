@@ -9,7 +9,7 @@ test('a fixed draw assigns unique players and rotates them to the tail',()=>{
  assert.equal(statusOf(started,'player-0'),'Playing');
  const finished=finishMatch(started,'court-1','A',undefined,()=>0.999);
  assert.equal(finished.courts[0].match,null);assert.equal(finished.history.length,1);
- assert.deepEqual(finished.queue.map(q=>q.playerId),['player-4','player-5','player-6','player-7','player-0','player-1','player-2','player-3']);
+ assert.deepEqual(finished.queue.map(q=>q.playerId),['player-4','player-5','player-6','player-7','player-2','player-3','player-0','player-1']);
  assert.equal(finished.players[0].games,1);assert.equal(finished.players[4].games,0);
  assert.equal(statusOf(finished,'player-0'),'In queue');
  assert.equal(finishMatch(finished,'court-1'),finished);
@@ -125,13 +125,18 @@ test('random draws select beyond the first four even on the initial match',()=>{
  assert.ok(started.queue.some(q=>Number(q.playerId.split('-')[1])<4));
  assert.equal(state.queue.length,8);
 });
-test('the next match changes partners even when the random draw repeats the previous order',()=>{
+test('unpaired players are randomly paired on their first match and stay together afterward',()=>{
  const state={...initialState(),queue:initialState().queue.slice(0,4)};
  const first=startMatch(state,'court-1');
  const finished=finishMatch(first,'court-1','A',undefined,()=>0.999);
  const next=startMatch(finished,'court-1');
  const before=first.courts[0].match.playerIds,after=next.courts[0].match.playerIds;
- for(const id of before) assert.notEqual(after[after.indexOf(id)^1],before[before.indexOf(id)^1]);
+ for(const id of before) {
+  const partner=partnerOf(first,id);
+  assert.ok(partner);
+  assert.equal(after[after.indexOf(id)^1],partner);
+  assert.equal(partnerOf(next,id),partner);
+ }
 });
 test('full pool randomization preserves locked teams across multiple courts',()=>{
  let state=lockPair(initialState(),'player-0','player-7');
